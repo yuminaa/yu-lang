@@ -6,8 +6,8 @@
 #include <cstdint>
 #include <string_view>
 #include <vector>
-#include "../../common/arch.hpp"
-#include "../../yu/include/tokens.h"
+#include "../yu/include/tokens.h"
+#include "../common/arch.hpp"
 
 namespace yu::compiler
 {

@@ -1,3 +1,6 @@
+# This file is part of the Yu programming language and is licensed under MIT License;
+# See LICENSE.txt for details
+
 name: ci
 
 on:
@@ -24,6 +27,10 @@ jobs:
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+      LLVM_VERSION: 17
 
     steps:
       - name: Checkout code
@@ -31,24 +38,34 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Cache Homebrew
+      - name: Cache LLVM and Homebrew
+        id: cache-llvm
         uses: actions/cache@v4
         with:
-          path: /opt/homebrew
-          key: homebrew-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
+          path: |
+            /usr/local/opt/llvm@${{ env.LLVM_VERSION }}
+            /usr/local/opt/llvm
+            /opt/homebrew
+          key: llvm${{ env.LLVM_VERSION }}-homebrew-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}
           restore-keys: |
-            homebrew-${{ runner.os }}-${{ runner.arch }}-
-            homebrew-${{ runner.os }}-
-
-      - name: Install Homebrew Dependencies
+            llvm${{ env.LLVM_VERSION }}-homebrew-${{ runner.os }}-${{ runner.arch }}-
+            llvm${{ env.LLVM_VERSION }}-homebrew-${{ runner.os }}-
+      - name: Install Dependencies
         run: |
           if ! command -v brew &>/dev/null; then
             echo "Homebrew not found, installing..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           fi
-          brew update
-          brew install ccache llvm lcov
-
+          
+          if [ ! -d "/usr/local/opt/llvm@${{ env.LLVM_VERSION }}" ]; then
+            brew install llvm@${{ env.LLVM_VERSION }}
+          fi
+          brew install ccache lcov
+      - name: Setup LLVM Path
+        run: |
+          echo "/usr/local/opt/llvm@${{ env.LLVM_VERSION }}/bin" >> $GITHUB_PATH
+          echo "LDFLAGS=-L/usr/local/opt/llvm@${{ env.LLVM_VERSION }}/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I/usr/local/opt/llvm@${{ env.LLVM_VERSION }}/include" >> $GITHUB_ENV
       - name: Cache ccache directory
         uses: actions/cache@v4
         with:
@@ -56,7 +73,6 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.arch }}-${{ matrix.compiler }}-${{ matrix.build_type }}-ccache-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.arch }}-${{ matrix.compiler }}-${{ matrix.build_type }}-ccache-
-
       - name: Create Build Directory
         run: cmake -E make_directory ${{ github.workspace }}/build
 
@@ -69,20 +85,20 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++ \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_PREFIX_PATH="/usr/local/opt/llvm@${{ env.LLVM_VERSION }}" \
+            -DLLVM_DIR="/usr/local/opt/llvm@${{ env.LLVM_VERSION }}/lib/cmake/llvm" \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
             -DBUILD_TESTING=ON \
             -DCMAKE_CXX_FLAGS="--coverage"
-
       - name: Build
         working-directory: ${{ github.workspace }}/build
-        run: cmake --build . --config ${{ matrix.build_type }}
+        run: cmake --build . --config ${{ matrix.build_type }} -j$(sysctl -n hw.ncpu)
 
       - name: Run Tests
         working-directory: ${{ github.workspace }}/build
         run: |
           export GTEST_COLOR=yes
           ctest --output-on-failure -C ${{ matrix.build_type }} --verbose
-
       - name: Upload Test Logs
         if: always()
         uses: actions/upload-artifact@v4.4.3

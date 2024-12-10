@@ -60,8 +60,6 @@ class TokenPrinter
                 return "DEFAULT";
             case token_i::CLASS:
                 return "CLASS";
-            case token_i::EXTENDS:
-                return "EXTENDS";
             case token_i::FINAL:
                 return "FINAL";
             case token_i::PUBLIC:

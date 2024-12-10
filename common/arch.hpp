@@ -1,5 +1,3 @@
-#pragma once
-
 #ifndef YUMINA_ARCH_HPP
 #define YUMINA_ARCH_HPP
 
