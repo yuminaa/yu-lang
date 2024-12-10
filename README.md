@@ -1,6 +1,6 @@
 # Yu Programming Language
 
-[![Build Status](https://github.com/yuminaa/yu/actions/workflows/workflow.yml/badge.svg)](https://github.com/yuminaa/yu/actions)
+[![Build Status](https://github.com/yuminaa/yu-lang/actions/workflows/workflow.yml/badge.svg)](https://github.com/yuminaa/yu-lang/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Yu is a statically typed, compiled programming language designed for data-oriented programming while maintaining
