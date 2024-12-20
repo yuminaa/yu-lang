@@ -1,8 +1,9 @@
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
-
 #include "../../compiler/lexer.h"
+#include "../../yu/include/tokens.h"
 
 namespace style
 {
@@ -33,7 +34,7 @@ void print_version()
 {
     std::cout << style::bold << style::magenta << "Yu" << style::reset
             << " v0.1.0\n";
-    std::cout << style::gray << "A minimal compiler for the Yu language"
+    std::cout << style::gray << "A compiler for the Yu programming language"
             << style::reset << "\n\n";
 }
 
@@ -72,7 +73,6 @@ void print_success(const std::string &msg)
 config_t parse_args(int argc, char *argv[])
 {
     config_t cfg;
-
     for (std::string::size_type i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
@@ -115,34 +115,78 @@ config_t parse_args(int argc, char *argv[])
 
 int main(const int argc, char *argv[])
 {
-    if (argc == 1)
+    if (argc <= 2)
     {
         print_help();
         return 1;
     }
 
     auto [verbose, optimize, target_dir, linker_script] = parse_args(argc, argv);
-    if (verbose)
+    try
     {
-        std::cout << style::bold << style::blue
-                << "⚡ Compiling project..." << style::reset << "\n\n";
+        std::filesystem::path output_dir = "build/tokens";
+        create_directories(output_dir);
 
-        std::cout << style::dim << "Configuration:" << style::reset << "\n"
-                << "  Directory:     " << target_dir << "\n"
-                << "  Optimize:      " << (optimize ? "yes" : "no") << "\n"
-                << "  Linker Script: "
-                << (linker_script.empty() ? "default" : linker_script)
-                << "\n\n";
+        for (const auto& entry : std::filesystem::directory_iterator(target_dir))
+        {
+            if (entry.path().extension() != ".yu")
+                continue;
+
+            if (verbose)
+                std::cout << style::blue << "Lexing " << entry.path() << style::reset << "\n";
+
+            std::ifstream file(entry.path());
+            std::string source((std::istreambuf_iterator(file)),
+                              std::istreambuf_iterator<char>());
+
+            auto lexer = yu::compiler::create_lexer(source);
+            auto tokens = tokenize(lexer);
+
+            std::filesystem::path output_path = output_dir / entry.path().filename();
+            output_path.replace_extension(".ytok");
+
+            std::ofstream out(output_path);
+            if (!out)
+            {
+                print_error("Failed to open output file: " + output_path.string());
+                return 1;
+            }
+
+            for (std::vector<unsigned>::size_type i = 0; i < tokens->size(); i++)
+            {
+                const auto token = yu::lang::token_t {
+                    tokens->starts[i],
+                    tokens->lengths[i],
+                    tokens->types[i],
+                    tokens->flags[i]
+                };
+                auto value = yu::compiler::get_token_value(lexer, token);
+                auto [line, col] = yu::compiler::get_line_col(lexer, token);
+
+                out << line << ":" << col << " "
+                    << yu::lang::token_type_to_string(token.type);
+
+                if (token.type == yu::lang::token_i::IDENTIFIER ||
+                    token.type == yu::lang::token_i::STR_LITERAL ||
+                    token.type == yu::lang::token_i::NUM_LITERAL)
+                {
+                    out << " `" << value << std::string("`");
+                }
+                out << "\n";
+            }
+
+            if (verbose)
+                std::cout << style::green << "  → " << output_path << style::reset << "\n";
+        }
+
+        print_success("Token files generated in build/tokens");
+
     }
-
-    // Dependency resolutions
-    // Compilation stuff
-    yu::compiler::Lexer* lexer = new yu::compiler::Lexer();
-    // Build the binary at default 'build/${YU_BUILD_TYPE}/bin/'
-
-    print_success("Compilation completed successfully");
-    std::cout << style::gray << "  Output: " << target_dir
-            << style::reset << "\n";
+    catch (const std::exception& e)
+    {
+        print_error(e.what());
+        return 1;
+    }
 
     return 0;
 }

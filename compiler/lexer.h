@@ -6,32 +6,22 @@
 #include <cstdint>
 #include <string_view>
 #include <vector>
-#include "../yu/include/tokens.h"
 #include "../common/arch.hpp"
+#include "../yu/include/tokens.h"
 
 namespace yu::compiler
 {
-    enum class generic_i : uint8_t
-    {
-        NONE,       // Not in template context
-        IDENTIFIER, // Just saw an identifier, might start template
-        TEMPLATE,   // Inside template parameters
-        DONE        // Finished template, back to normal
-    };
-
     /**
      * @brief The lexer class.
      */
     struct alignas(64) Lexer
     {
-        // Hot group - 16 bytes
-        const char *src{};      // 8 bytes
-        uint32_t current_pos{}; // 4 bytes
-        uint32_t src_length{};  // 4 bytes
+        const char *src{};
+        uint32_t current_pos{};
+        uint32_t src_length{};
 
-        // Cold group - separate cache line
-        lang::TokenList tokens;            // vector - 24 bytes
-        std::vector<uint32_t> line_starts; // vector - 24 bytes
+        lang::TokenList tokens;
+        std::vector<uint32_t> line_starts;
 
         ALWAYS_INLINE HOT_FUNCTION void prefetch_next() const;
     };
@@ -42,7 +32,7 @@ namespace yu::compiler
      * @return Lexer The lexer object.
      * @throws std::runtime_error if the source file is too large (>4GiB).
     */
-    Lexer create_lexer(std::basic_string_view<char> src);
+    Lexer create_lexer(std::string_view src);
 
     /**
      * @brief Returns the next token.

@@ -2,9 +2,13 @@
 # See LICENSE.txt for details
 
 set(COMPILER_SRC
-        lexer.h
-        impl/lexer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../yu/src/tokens.cpp
+
+        lexer.h
+        parser.h
+
+        impl/lexer.cpp
+        impl/parser.cpp
 )
 
 add_library(YU_COMPILER STATIC ${COMPILER_SRC})

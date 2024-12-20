@@ -257,4 +257,6 @@ namespace yu::lang
 
         [[nodiscard]] size_t size() const;
     };
+
+    std::string_view token_type_to_string(const token_i &type);
 }
