@@ -21,8 +21,6 @@ target_include_directories(YU_COMPILER
         ${CMAKE_BINARY_DIR}/include
 )
 
-target_link_libraries(YU_COMPILER PUBLIC LLVM)
-
 set_target_properties(YU_COMPILER PROPERTIES
         CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
