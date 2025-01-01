@@ -1,6 +1,7 @@
 # Yu Intermediate Representation (UIR) Specification
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Basic Structure](#basic-structure)
 3. [Type System](#type-system)
@@ -13,7 +14,7 @@
 
 ## Overview
 
-UIR is a Static Single Assignment (SSA) based intermediate representation designed for the Yu programming language which 
+UIR is a Static Single Assignment (SSA) based intermediate representation designed for the Yu programming language which
 serves as a bridge between Yu's high-level constructs and machine code generation.
 
 ### Design Goals
@@ -35,6 +36,7 @@ serves as a bridge between Yu's high-level constructs and machine code generatio
 ## Basic Structure
 
 ### Function Definition
+
 ```
 func function_name(%param1: i32, %param2: ptr) -> i32:
     bb0:
@@ -44,6 +46,7 @@ func function_name(%param1: i32, %param2: ptr) -> i32:
 ```
 
 ### Basic Blocks
+
 ```
 bb0:                         # Entry block
     %1 = instruction
@@ -56,6 +59,7 @@ bb1:                         # Subsequent block
 ## Type System
 
 ### Primitive Types
+
 ```
 void     # No type/return
 i8       # 8-bit signed integer
@@ -72,6 +76,7 @@ ptr      # Generic pointer type
 ```
 
 ### Compound Types
+
 ```
 ptr<T>           # Typed pointer
 array<T, N>      # Fixed-size array
@@ -82,6 +87,7 @@ struct<{...}>    # Structure type
 ## Instructions
 
 ### Memory Operations
+
 ```
 # Allocation
 %1 = alloc i32                   # Stack allocation
@@ -99,6 +105,7 @@ store i32 %val, [%ptr + 8]       # Store with offset
 ```
 
 ### Arithmetic Operations
+
 ```
 # Integer Arithmetic
 %1 = add <type> %a, %b          # Addition
@@ -116,6 +123,7 @@ store i32 %val, [%ptr + 8]       # Store with offset
 ```
 
 ### Bitwise Operations
+
 ```
 %1 = and <type> %a, %b          # Bitwise AND
 %2 = or <type> %a, %b           # Bitwise OR
@@ -127,6 +135,7 @@ store i32 %val, [%ptr + 8]       # Store with offset
 ```
 
 ### Comparison Operations
+
 ```
 # Integer Comparisons
 %1 = cmp.eq <type> %a, %b       # Equal
@@ -144,6 +153,7 @@ store i32 %val, [%ptr + 8]       # Store with offset
 ```
 
 ### Conversion Operations
+
 ```
 %1 = zext <from> %a to <to>     # Zero extension
 %2 = sext <from> %a to <to>     # Sign extension
@@ -156,6 +166,7 @@ store i32 %val, [%ptr + 8]       # Store with offset
 ## SSA Properties
 
 ### Phi Nodes
+
 ```
 # Basic phi node
 %1 = phi i32 [%2, bb0], [%3, bb1]   # Value depends on predecessor block
@@ -167,6 +178,7 @@ bb2:
 ```
 
 ### SSA Helpers
+
 ```
 %1 = undef <type>               # Undefined value
 %2 = unreachable               # Unreachable code marker
@@ -175,6 +187,7 @@ bb2:
 ## Memory Model
 
 ### Memory States
+
 ```
 # Explicit memory versioning
 %mem0 = func_entry             # Initial memory state
@@ -183,6 +196,7 @@ bb2:
 ```
 
 ### Memory Barriers
+
 ```
 %mem1 = barrier %mem0          # Full memory barrier
 %mem2 = barrier.acq %mem1      # Acquire barrier
@@ -192,6 +206,7 @@ bb2:
 ## Control Flow
 
 ### Basic Control Flow
+
 ```
 jump bb1                       # Unconditional jump
 branch %cond, bb1, bb2        # Conditional branch
@@ -214,6 +229,7 @@ landingpad:
 ## Function Calls
 
 ### Direct Calls
+
 ```
 # Void function call
 call void @func()

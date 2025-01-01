@@ -1,6 +1,7 @@
 # Yu Programming Language Specification
 
 ## Table of Contents
+
 1. [Introduction](#introduction)
 2. [Lexical Structure](#lexical-structure)
 3. [Types](#type-system)
@@ -33,6 +34,7 @@ All identifiers in Yu follow explicit naming conventions:
 * Constants: `SCREAMING_SNAKE_CASE` (e.g., `MAX_SIZE`, `PI`)
 
 ### Comments
+
 ```yu
 // Single-line comment
 
@@ -44,6 +46,7 @@ All identifiers in Yu follow explicit naming conventions:
 ```
 
 ### Keywords
+
 ```yu
 true     false    null     import   var     const    function
 inline   return   enum     if       else    for      while
@@ -53,6 +56,7 @@ catch    from     as       operator new     delete
 ```
 
 ### Basic Types
+
 ```yu
 u8      // Unsigned 8-bit integer
 i8      // Signed 8-bit integer

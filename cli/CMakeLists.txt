@@ -4,9 +4,10 @@
 cmake_minimum_required(VERSION 3.29)
 
 add_executable(YU_CLI
-        src/cli.cpp
-        ${CMAKE_SOURCE_DIR}/yu/src/tokens.cpp
-        ${CMAKE_SOURCE_DIR}/yu/include/tokens.h
+        impl/cli.cpp
+        timer.h
+        style.h
+        impl/timer.cpp
 )
 
 target_include_directories(YU_CLI PRIVATE
@@ -22,7 +23,3 @@ target_link_libraries(YU_CLI PRIVATE
         stdc++
         YU_COMPILER
 )
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_link_libraries(YU_CLI PRIVATE c++abi)
-endif ()

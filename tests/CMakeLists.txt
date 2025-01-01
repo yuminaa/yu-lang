@@ -17,7 +17,7 @@ if (APPLE)
     target_link_directories(YU_TEST PRIVATE
             /opt/homebrew/opt/llvm/lib
     )
-endif()
+endif ()
 
 add_dependencies(YU_TEST YU_COMPILER)
 

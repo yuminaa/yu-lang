@@ -2,13 +2,20 @@
 # See LICENSE.txt for details
 
 set(COMPILER_SRC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../yu/src/tokens.cpp
-
         lexer.h
         parser.h
+        ir.h
+        token.h
+        builder.h
+        analyzer.h
 
         impl/lexer.cpp
         impl/parser.cpp
+        impl/token.cpp
+        codegen/x86.h
+        impl/builder.cpp
+        impl/analyzer.cpp
+        codegen/impl/x86.cpp
 )
 
 add_library(YU_COMPILER STATIC ${COMPILER_SRC})
@@ -22,7 +29,6 @@ target_include_directories(YU_COMPILER
 )
 
 set_target_properties(YU_COMPILER PROPERTIES
-        CXX_STANDARD 17
         CXX_STANDARD_REQUIRED ON
 )
 
@@ -36,4 +42,4 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             c++
             c++abi
     )
-endif()
+endif ()

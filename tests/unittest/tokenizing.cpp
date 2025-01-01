@@ -184,14 +184,14 @@ public:
 
         for (std::vector<unsigned>::size_type i = 0; i < tokens.types.size(); ++i)
         {
-            auto [line, col] = get_line_col(lexer, {
-                                                tokens.starts[i], tokens.lengths[i],
-                                                tokens.types[i], tokens.flags[i]
-                                            });
-            const std::string_view token_text = get_token_value(lexer, {
-                                                                    tokens.starts[i], tokens.lengths[i],
-                                                                    tokens.types[i], tokens.flags[i]
-                                                                });
+            auto [line, col] = lexer.get_line_col({
+                tokens.starts[i], tokens.lengths[i],
+                tokens.types[i], tokens.flags[i]
+            });
+            const std::string_view token_text = lexer.get_token_value({
+                tokens.starts[i], tokens.lengths[i],
+                tokens.types[i], tokens.flags[i]
+            });
 
             ss << YELLOW
                     << "[" << std::setw(3) << i << "] "
@@ -208,8 +208,8 @@ public:
     static std::string print(const token_t &token, const Lexer &lexer)
     {
         std::stringstream ss;
-        auto [line, col] = get_line_col(lexer, token);
-        const std::string_view token_text = get_token_value(lexer, token);
+        auto [line, col] = lexer.get_line_col(token);
+        const std::string_view token_text = lexer.get_token_value(token);
 
         ss << YELLOW
                 << get_token_name(token.type) << " | "
@@ -227,7 +227,7 @@ class LexerTest : public testing::Test
 {
 protected:
     void verify_token(const TokenList *tokens, auto index, const token_i expected_type,
-                      const std::string_view &source)
+                      const std::string_view &source, Lexer lexer)
     {
         ASSERT_LT(index, tokens->types.size())
             << "Token index out of range";
@@ -245,7 +245,7 @@ protected:
  "\n"
             << "Actual:   " << TokenPrinter::print(token, lexer);
 
-        auto actual_value = get_token_value(lexer, token);
+        auto actual_value = lexer.get_token_value(token);
         auto expected_value = std::string_view(source.data() + tokens->starts[index], tokens->lengths[index]);
         EXPECT_EQ(expected_value, actual_value)
             << "Token value mismatch at index " << index << ":\n"
@@ -253,7 +253,7 @@ protected:
             << "Actual:   '" << actual_value << "'";
     }
 
-    void dump_tokens(const TokenList *tokens) const
+    void dump_tokens(const TokenList *tokens, Lexer lexer) const
     {
         std::cout << TokenPrinter::print(*tokens, lexer);
     }
@@ -261,31 +261,29 @@ protected:
     void SetUp() override {}
 
     void TearDown() override {}
-
-    Lexer lexer;
 };
 
 TEST_F(LexerTest, NestedGenerics)
 {
     constexpr std::string_view source = "var matrix: Array<Array<Vector3<T>>>;";
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // matrix
-    verify_token(tokens, i++, token_i::COLON, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Array
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Array
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Vector3
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // T
-    verify_token(tokens, i++, token_i::GREATER, source);
-    verify_token(tokens, i++, token_i::GREATER, source);
-    verify_token(tokens, i++, token_i::GREATER, source);
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // matrix
+    verify_token(tokens, i++, token_i::COLON, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Array
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Array
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Vector3
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // T
+    verify_token(tokens, i++, token_i::GREATER, source, lexer);
+    verify_token(tokens, i++, token_i::GREATER, source, lexer);
+    verify_token(tokens, i++, token_i::GREATER, source, lexer);
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, GenericConstraints)
@@ -297,25 +295,25 @@ TEST_F(LexerTest, GenericConstraints)
         }
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::CLASS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // DataStructure
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // T
-    verify_token(tokens, i++, token_i::COLON, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Comparable
-    verify_token(tokens, i++, token_i::AND, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Serializable
-    verify_token(tokens, i++, token_i::COMMA, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // U
-    verify_token(tokens, i++, token_i::COLON, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // Container
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // T
-    verify_token(tokens, i++, token_i::GREATER, source);
+    verify_token(tokens, i++, token_i::CLASS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // DataStructure
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // T
+    verify_token(tokens, i++, token_i::COLON, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Comparable
+    verify_token(tokens, i++, token_i::AND, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Serializable
+    verify_token(tokens, i++, token_i::COMMA, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // U
+    verify_token(tokens, i++, token_i::COLON, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // Container
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // T
+    verify_token(tokens, i++, token_i::GREATER, source, lexer);
 }
 
 TEST_F(LexerTest, ComplexTypeAnnotations)
@@ -330,16 +328,16 @@ TEST_F(LexerTest, ComplexTypeAnnotations)
         }
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::NO_DISCARD_ANNOT, source);
-    verify_token(tokens, i++, token_i::PURE_ANNOT, source);
-    verify_token(tokens, i++, token_i::ALIGN_ANNOT, source);
-    verify_token(tokens, i++, token_i::LEFT_PAREN, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source);
-    verify_token(tokens, i++, token_i::RIGHT_PAREN, source);
+    verify_token(tokens, i++, token_i::NO_DISCARD_ANNOT, source, lexer);
+    verify_token(tokens, i++, token_i::PURE_ANNOT, source, lexer);
+    verify_token(tokens, i++, token_i::ALIGN_ANNOT, source, lexer);
+    verify_token(tokens, i++, token_i::LEFT_PAREN, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer);
+    verify_token(tokens, i++, token_i::RIGHT_PAREN, source, lexer);
 }
 
 TEST_F(LexerTest, ComplexNestedExpressions)
@@ -348,20 +346,20 @@ TEST_F(LexerTest, ComplexNestedExpressions)
         result = matrix[i * 2 + 1][j - (k * 3)].transform<U>().value;
     )";
 
-    lexer = create_lexer(source);
-    auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // result
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // matrix
-    verify_token(tokens, i++, token_i::LEFT_BRACKET, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // i
-    verify_token(tokens, i++, token_i::STAR, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 2
-    verify_token(tokens, i++, token_i::PLUS, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 1
-    verify_token(tokens, i++, token_i::RIGHT_BRACKET, source);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // result
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // matrix
+    verify_token(tokens, i++, token_i::LEFT_BRACKET, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // i
+    verify_token(tokens, i++, token_i::STAR, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 2
+    verify_token(tokens, i++, token_i::PLUS, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 1
+    verify_token(tokens, i++, token_i::RIGHT_BRACKET, source, lexer);
 }
 
 TEST_F(LexerTest, ComplexStringLiterals)
@@ -373,15 +371,15 @@ TEST_F(LexerTest, ComplexStringLiterals)
                     line breaks";
     )";
 
-    lexer = create_lexer(source);
-    auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // str1
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::STR_LITERAL, source);
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // str1
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::STR_LITERAL, source, lexer);
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, MethodChainingWithGenerics)
@@ -393,18 +391,18 @@ TEST_F(LexerTest, MethodChainingWithGenerics)
                      .unwrap_or(default_value);
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // result
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // value
-    verify_token(tokens, i++, token_i::DOT, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // map
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // U
-    verify_token(tokens, i++, token_i::GREATER, source);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // result
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // value
+    verify_token(tokens, i++, token_i::DOT, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // map
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // U
+    verify_token(tokens, i++, token_i::GREATER, source, lexer);
 }
 
 TEST_F(LexerTest, ComplexTemplateInstantiation)
@@ -415,34 +413,34 @@ TEST_F(LexerTest, ComplexTemplateInstantiation)
         );
     )";
 
-    lexer = create_lexer(source);
-    auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // data
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // HashMap
-    verify_token(tokens, i++, token_i::LESS, source);
-    verify_token(tokens, i++, token_i::STRING, source); // string
-    verify_token(tokens, i++, token_i::COMMA, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // vector
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // data
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // HashMap
+    verify_token(tokens, i++, token_i::LESS, source, lexer);
+    verify_token(tokens, i++, token_i::STRING, source, lexer); // string
+    verify_token(tokens, i++, token_i::COMMA, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // vector
 }
 
 TEST_F(LexerTest, OperatorPrecedence)
 {
     constexpr std::string_view source = "x = (-a * (b + c)) / (d - e);";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // x
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::LEFT_PAREN, source);
-    verify_token(tokens, i++, token_i::MINUS, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // a
-    verify_token(tokens, i++, token_i::STAR, source);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // x
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::LEFT_PAREN, source, lexer);
+    verify_token(tokens, i++, token_i::MINUS, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // a
+    verify_token(tokens, i++, token_i::STAR, source, lexer);
 }
 
 TEST_F(LexerTest, NumberLiterals)
@@ -456,39 +454,39 @@ TEST_F(LexerTest, NumberLiterals)
         var big_hex = 0xFFFFFFFFFFFFFFFF;
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // decimal
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 123
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // decimal
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 123
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // hex
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 0xFF
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // hex
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 0xFF
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // binary
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 0b1010
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // binary
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 0b1010
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // float_num
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 1.234
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // float_num
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 1.234
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // scientific
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 1.23e-4
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // scientific
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 1.23e-4
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, ErrorRecovery)
@@ -500,36 +498,36 @@ TEST_F(LexerTest, ErrorRecovery)
         var valid = true;
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);
-    verify_token(tokens, i++, token_i::EQUAL, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
 
     while (i < tokens->types.size() && tokens->types[static_cast<std::vector<token_i>::size_type>(i)] !=
            token_i::SEMICOLON)
         i++;
-    verify_token(tokens, i++, token_i::SEMICOLON, source); // ;
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer); // ;
 
-    verify_token(tokens, i++, token_i::VAR, source);         // var
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);  // y
-    verify_token(tokens, i++, token_i::EQUAL, source);       // =
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 42
-    verify_token(tokens, i++, token_i::SEMICOLON, source);   // ;
+    verify_token(tokens, i++, token_i::VAR, source, lexer);         // var
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);  // y
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);       // =
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 42
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);   // ;
 
-    verify_token(tokens, i++, token_i::VAR, source);        // var
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // z
-    verify_token(tokens, i++, token_i::EQUAL, source);      // =
-    i++;                                                    // Skip the @ token
-    verify_token(tokens, i++, token_i::SEMICOLON, source);  // ;
+    verify_token(tokens, i++, token_i::VAR, source, lexer);        // var
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // z
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);      // =
+    i++;                                                           // Skip the @ token
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);  // ;
 
-    verify_token(tokens, i++, token_i::VAR, source);        // var
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // valid
-    verify_token(tokens, i++, token_i::EQUAL, source);      // =
-    verify_token(tokens, i++, token_i::TRUE, source);       // true
-    verify_token(tokens, i++, token_i::SEMICOLON, source);  // ;
+    verify_token(tokens, i++, token_i::VAR, source, lexer);        // var
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // valid
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);      // =
+    verify_token(tokens, i++, token_i::TRUE, source, lexer);       // true
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);  // ;
 
     ASSERT_EQ(tokens->types[static_cast<std::vector<token_i>::size_type>(i)], token_i::END_OF_FILE);
 }
@@ -543,15 +541,15 @@ TEST_F(LexerTest, ComplexEscapeSequences)
         var str4 = "Mixed \n\t\"escapes\"";
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::STR_LITERAL, source);
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::STR_LITERAL, source, lexer);
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, CommentRecovery)
@@ -566,33 +564,33 @@ TEST_F(LexerTest, CommentRecovery)
         var b = 5;
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // x
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 1
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // x
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 1
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // y
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 2
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // y
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 2
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // z
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 3
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // z
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 3
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source); // a
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::NUM_LITERAL, source); // 4
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer); // a
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer); // 4
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, StringRecovery)
@@ -604,27 +602,27 @@ TEST_F(LexerTest, StringRecovery)
         var str4 = "string with \n\t escapes";
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::STR_LITERAL, source);
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::STR_LITERAL, source, lexer);
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    while (tokens->types[static_cast<std::vector<token_i>::size_type>(i)] != token_i::VAR)
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    while (tokens->types[i] != token_i::VAR)
         i++;
 
-    verify_token(tokens, i++, token_i::VAR, source);
-    verify_token(tokens, i++, token_i::IDENTIFIER, source);
-    verify_token(tokens, i++, token_i::EQUAL, source);
-    verify_token(tokens, i++, token_i::STR_LITERAL, source);
-    verify_token(tokens, i++, token_i::SEMICOLON, source);
+    verify_token(tokens, i++, token_i::VAR, source, lexer);
+    verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+    verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+    verify_token(tokens, i++, token_i::STR_LITERAL, source, lexer);
+    verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
 }
 
 TEST_F(LexerTest, ComplexIdentifiers)
@@ -639,23 +637,23 @@ TEST_F(LexerTest, ComplexIdentifiers)
         var 123invalid = 7;
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
     size_t i = 0;
     auto verify_identifier = [&](const std::string_view &expected)
     {
-        verify_token(tokens, i++, token_i::VAR, source);
-        verify_token(tokens, i++, token_i::IDENTIFIER, source);
-        EXPECT_EQ(get_token_value(lexer, {tokens->starts[static_cast<std::vector<unsigned>::size_type>(i - 1)],
+        verify_token(tokens, i++, token_i::VAR, source, lexer);
+        verify_token(tokens, i++, token_i::IDENTIFIER, source, lexer);
+        EXPECT_EQ(lexer.get_token_value({tokens->starts[static_cast<std::vector<unsigned>::size_type>(i - 1)],
                       tokens->lengths[static_cast<std::vector<unsigned>::size_type>(i - 1)],
                       tokens->types[static_cast<std::vector<unsigned>::size_type>(i - 1)],
                       tokens->flags[static_cast<std::vector<unsigned>::size_type>(i - 1)]}),
                   expected);
 
-        verify_token(tokens, i++, token_i::EQUAL, source);
-        verify_token(tokens, i++, token_i::NUM_LITERAL, source);
-        verify_token(tokens, i++, token_i::SEMICOLON, source);
+        verify_token(tokens, i++, token_i::EQUAL, source, lexer);
+        verify_token(tokens, i++, token_i::NUM_LITERAL, source, lexer);
+        verify_token(tokens, i++, token_i::SEMICOLON, source, lexer);
     };
 
     verify_identifier("_underscore");
@@ -672,10 +670,10 @@ TEST_F(LexerTest, Array)
         var nested: [ [ u8 ] ] = { { 1, 2 }, { 3, 4 }, { 5 } };
     )";
 
-    lexer = create_lexer(source);
-    const auto tokens = tokenize(lexer);
+    Lexer lexer(source);
+    const auto tokens = lexer.tokenize();
 
-    std::vector<unsigned>::size_type i = 0; // Using iterative index
+    std::vector<unsigned>::size_type i = 0;
 
     EXPECT_EQ(tokens->types[i++], token_i::VAR);
     EXPECT_EQ(tokens->types[i++], token_i::IDENTIFIER);
