@@ -1,0 +1,64 @@
+Program         ::= (ImportDecl | Declaration)*
+
+ImportDecl      ::= 'import' ('{' ImportList '}' 'from')? StringLit ('as' Ident)?
+ImportList      ::= Ident (',' Ident)*
+
+Declaration     ::= ClassDecl | FunctionDecl | VariableDecl
+
+ClassDecl       ::= Attribute* Access? 'class' Ident GenericParams?
+                  Inheritance? '{' ClassMember* '}'
+Inheritance     ::= ':' TypeName
+ClassMember     ::= Access? (VariableDecl | FunctionDecl | OperatorDecl)
+
+FunctionDecl    ::= Attribute* Access? 'function' Ident GenericParams?
+                  '(' ParamList? ')' '->' TypeName Block
+OperatorDecl    ::= 'operator' ('new' | '=' | '+' | '-' | '*' | '/' | '%')
+                  '(' ParamList? ')' '->' TypeName Block
+
+VariableDecl    ::= Attribute* ('var' | 'const') Ident TypeAnnotation?
+                  ('=' Expression)?
+TypeAnnotation  ::= ':' TypeName
+
+GenericParams   ::= '<' Ident (',' Ident)* '>'
+ParamList       ::= Parameter (',' Parameter)*
+Parameter       ::= Ident ':' TypeName
+
+TypeName        ::= Ident | GenericType | ArrayType | PtrType
+GenericType     ::= Ident '<' TypeName (',' TypeName)* '>'
+ArrayType       ::= '[' TypeName ']'
+PtrType         ::= 'Ptr' '<' TypeName '>'
+
+Block           ::= '{' Statement* '}'
+Statement       ::= VariableDecl | Expression | IfStmt | WhileStmt |
+                  ForStmt | ReturnStmt | BreakStmt | ContinueStmt |
+                  TryStmt | Block
+
+IfStmt          ::= 'if' '(' Expression ')' Block
+                  ('else' 'if' '(' Expression ')' Block)*
+                  ('else' Block)?
+WhileStmt       ::= 'while' '(' Expression ')' Block
+ForStmt         ::= 'for' '(' ForInit? ';' Expression? ';' Expression? ')' Block
+ForInit         ::= VariableDecl | Expression
+ReturnStmt      ::= 'return' Expression? ';'
+
+Expression      ::= Assignment | BinaryExpr | UnaryExpr | PrimaryExpr
+Assignment      ::= PrimaryExpr '=' Expression
+BinaryExpr      ::= Expression BinOp Expression
+UnaryExpr       ::= UnOp Expression
+PrimaryExpr     ::= Literal | Ident | CallExpr | MemberExpr | IndexExpr |
+                   '(' Expression ')'
+
+CallExpr        ::= PrimaryExpr '(' ArgList? ')'
+MemberExpr      ::= PrimaryExpr '.' Ident
+IndexExpr       ::= PrimaryExpr '[' Expression ']'
+ArgList         ::= Expression (',' Expression)*
+
+BinOp           ::= '+' | '-' | '*' | '/' | '%' | '&&' | '||' | '==' | '!=' |
+                   '<' | '>' | '<=' | '>=' | '&' | '|' | '^' | '<<' | '>>'
+UnOp            ::= '-' | '!' | '~'
+
+Access          ::= 'public' | 'private' | 'protect'
+Attribute       ::= '@' Ident ('(' Expression ')')?
+
+Literal         ::= IntLit | FloatLit | StringLit | BoolLit | NullLit
+Ident           ::= [a-zA-Z_][a-zA-Z0-9_]*
