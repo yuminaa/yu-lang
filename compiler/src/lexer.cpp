@@ -117,6 +117,24 @@ namespace yu::compiler
         PREFETCH_L3(src + current_pos + CACHE_LINE_SIZE * 8);
     }
 
+    /**
+     * @brief Skips whitespace and comments in the source code.
+     *
+     * This method efficiently processes the source code, advancing the current position
+     * past whitespace characters and comments. It uses SIMD-style chunk checking for
+     * performance and handles both single-line (//) and multi-line (/* */) comments.
+     *
+     * @param src Pointer to the source code character array
+     * @param current_pos Reference to the current position in the source code, which will be updated
+     * @param src_length Total length of the source code
+     *
+     * @note Uses branchless techniques for line start tracking and comment processing
+     * @note Modifies line_starts vector to track line positions during comment skipping
+     * @note Handles both single-line and multi-line comments with efficient parsing
+     *
+     * @performance O(n) linear time complexity, with optimized chunk processing
+     * @thread_safety Not thread-safe due to modification of shared line_starts vector
+     */
     ALWAYS_INLINE HOT_FUNCTION void Lexer::skip_whitespace_comment(const char *src, uint32_t &current_pos,
                                                                    uint32_t src_length)
     {
@@ -378,12 +396,40 @@ namespace yu::compiler
         return &tokens;
     }
 
+    /**
+     * @brief Calculates the line and column number for a given token.
+     *
+     * Determines the line and column position of a token in the source code using 
+     * the pre-computed line start positions. Uses std::ranges::upper_bound to efficiently 
+     * find the line containing the token.
+     *
+     * @param token The token whose line and column position is to be determined.
+     * @return A std::pair where the first element is the line number (1-based) 
+     *         and the second element is the column number (1-based).
+     *
+     * @note Time complexity is O(log n) due to binary search on line starts.
+     * @note Line and column numbers are 1-indexed for compatibility with typical 
+     *       text editor and compiler error reporting conventions.
+     */
     HOT_FUNCTION std::pair<uint32_t, uint32_t> Lexer::get_line_col(const lang::token_t &token) const
     {
         const auto it = std::ranges::upper_bound(line_starts, token.start);
         return { std::distance(line_starts.begin(), it), token.start - *(it - 1) + 1 };
     }
 
+    /**
+     * @brief Determines the token type for a given character.
+     *
+     * This function uses pre-computed lookup tables to efficiently classify characters
+     * into their corresponding token types. It first checks for single-character tokens,
+     * then falls back to character type-based token classification.
+     *
+     * @param c The input character to classify
+     * @return Token identifier for the character, prioritizing single-character tokens
+     *
+     * @note Uses branchless lookup strategy for performance
+     * @complexity O(1) constant time lookup
+     */
     HOT_FUNCTION lang::token_i Lexer::get_token_type(const char c)
     {
         const uint8_t char_class = char_type[static_cast<uint8_t>(c)];
@@ -393,11 +439,33 @@ namespace yu::compiler
         return (single_token != lang::token_i::UNKNOWN) ? single_token : type_token;
     }
 
+    /**
+     * @brief Retrieves the string value of a token from the source code.
+     *
+     * Extracts a string view representing the token's text based on its start position and length.
+     *
+     * @param token The token whose value is to be retrieved.
+     * @return std::string_view A view of the token's text in the source code.
+     * @note This method provides a non-copying, lightweight view of the token's text.
+     */
     HOT_FUNCTION std::string_view Lexer::get_token_value(const lang::token_t &token) const
     {
         return { src + token.start, token.length };
     }
 
+    /**
+     * @brief Retrieves the string value of a token at a specific position.
+     *
+     * @param pos The index of the token in the tokens array.
+     * @return std::string_view A non-owning view of the token's string representation.
+     *
+     * @details This function returns a string_view that references the token's text 
+     * directly from the source code buffer. It uses the token's start position and 
+     * length to create a view without copying the underlying string.
+     *
+     * @note The returned string_view is valid only as long as the source code 
+     * buffer remains unchanged.
+     */
     HOT_FUNCTION std::string_view Lexer::get_token_value(const size_t pos)
     {
         return {

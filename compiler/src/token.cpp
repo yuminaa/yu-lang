@@ -2,6 +2,13 @@
 
 namespace yu::lang
 {
+    /**
+     * @brief Adds a new token to the TokenList.
+     *
+     * Appends the token's start position, length, type, and flags to their respective internal vectors.
+     *
+     * @param token The token to be added to the list, containing start position, length, type, and flags.
+     */
     void TokenList::push_back(const token_t &token)
     {
         starts.emplace_back(token.start);

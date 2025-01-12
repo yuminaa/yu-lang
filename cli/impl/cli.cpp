@@ -20,6 +20,20 @@ struct ParseResult
     yu::compiler::SymbolList symbols;
 };
 
+/**
+ * @brief Reads the contents of a file into a string.
+ *
+ * @param filename Path to the file to be read.
+ * @return std::string Contents of the file as a single string.
+ * @throws std::runtime_error If the file cannot be opened.
+ *
+ * This function attempts to open the specified file and read its entire contents
+ * into a string. If the file cannot be opened, it throws a runtime error with 
+ * a descriptive message including the filename.
+ *
+ * @note Uses std::ifstream and std::stringstream for efficient file reading.
+ * @note Reads the entire file contents into memory at once.
+ */
 std::string read_file(const std::string &filename)
 {
     std::ifstream file(filename);
@@ -33,6 +47,21 @@ std::string read_file(const std::string &filename)
     return buffer.str();
 }
 
+/**
+ * @brief Parses a source file and populates a ParseResult with parsing information.
+ *
+ * This function attempts to read, tokenize, and parse a given source file. It handles
+ * the entire parsing process, capturing variable declarations, symbols, and potential
+ * parsing errors.
+ *
+ * @param filename The path to the source file to be parsed
+ * @param result Reference to a ParseResult struct to store parsing outcomes
+ *
+ * @note Thread-safe function that can be used in concurrent parsing scenarios
+ * @note Exceptions from file reading or parsing are caught and stored in the result
+ *
+ * @exception Captures any std::exception that occurs during file reading or parsing
+ */
 void parse_file(const std::string &filename, ParseResult &result)
 {
     result.filename = filename;
@@ -64,6 +93,27 @@ void parse_file(const std::string &filename, ParseResult &result)
     }
 }
 
+/**
+ * @brief Main entry point for the source file parsing program.
+ *
+ * Parses multiple source files concurrently using multithreading. Accepts file paths
+ * as command-line arguments and processes each file in a separate thread.
+ *
+ * @param argc Number of command-line arguments
+ * @param argv Array of command-line argument strings
+ *
+ * @return int Exit status (0 for success, 1 for parsing failures)
+ *
+ * @details
+ * - Requires at least one file path as a command-line argument
+ * - Creates a thread for each file to parse concurrently
+ * - Uses thread-safe output mechanism with mutex to prevent data races
+ * - Prints parsing results and any encountered errors
+ * - Supports parsing multiple files simultaneously
+ *
+ * @note Thread-safe implementation with synchronized console output
+ * @note Handles parsing errors for individual files without stopping entire process
+ */
 int main(const int argc, char *argv[])
 {
     if (argc < 2)
