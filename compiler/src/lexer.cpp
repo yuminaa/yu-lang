@@ -5,13 +5,12 @@
  *  See LICENSE.txt for details
  */
 
-#include "../lexer.h"
+#include "../include/lexer.h"
 #include <array>
 #include <cstdint>
 
 namespace yu::compiler
 {
-    // Lookup tables
     static const std::array<uint8_t, 256> char_type = []
     {
         std::array<uint8_t, 256> types {};
@@ -27,10 +26,10 @@ namespace yu::compiler
         return types;
     }();
 
-    static const std::array<lang::token_i, 256> single_char_tokens = []
+    static constexpr std::array<lang::token_i, 256> single_char_tokens = []
     {
         alignas(CACHE_LINE_SIZE) std::array<lang::token_i, 256> tokens {};
-        std::fill(tokens.begin(), tokens.end(), lang::token_i::UNKNOWN);
+        std::ranges::fill(tokens, lang::token_i::UNKNOWN);
 
         tokens['+'] = lang::token_i::PLUS;
         tokens['-'] = lang::token_i::MINUS;
@@ -60,7 +59,7 @@ namespace yu::compiler
         return tokens;
     }();
 
-    static constexpr std::array<lang::token_i, 7> type_to_token = {
+    static constexpr std::array type_to_token = {
         lang::token_i::UNKNOWN,     // 0
         lang::token_i::UNKNOWN,     // type 1 (whitespace)
         lang::token_i::UNKNOWN,     // type 2 (comment start)
@@ -121,6 +120,7 @@ namespace yu::compiler
     ALWAYS_INLINE HOT_FUNCTION void Lexer::skip_whitespace_comment(const char *src, uint32_t &current_pos,
                                                                    uint32_t src_length)
     {
+        // Fast SIMD-style chunk checking remains unchanged
         while (current_pos + 8 <= src_length)
         {
             const uint64_t chunk = *reinterpret_cast<const uint64_t *>(src + current_pos);
@@ -144,7 +144,13 @@ namespace yu::compiler
             const char current_char = src[current_pos];
             const uint8_t type = char_type[static_cast<uint8_t>(current_char)];
             const uint32_t is_newline = current_char == '\n';
-            line_starts.emplace_back(current_pos + 1 * is_newline);
+
+            // Branchless line start tracking
+            const size_t curr_size = line_starts.size();
+            line_starts.resize(curr_size + is_newline);
+            line_starts[curr_size] *= !is_newline;
+            line_starts[curr_size] += (current_pos + 1) * is_newline;
+
             const bool has_next = current_pos + 1 < src_length;
             const char next_char = has_next ? src[current_pos + 1] : '\0';
 
@@ -161,7 +167,13 @@ namespace yu::compiler
             while (in_comment && current_pos + 1 < src_length)
             {
                 const uint32_t end_of_comment = src[current_pos] == '*' & src[current_pos + 1] == '/';
-                line_starts.emplace_back(current_pos + 1 * (src[current_pos] == '\n'));
+
+                // Handle newlines in multi-line comments
+                const uint32_t comment_newline = src[current_pos] == '\n';
+                const size_t comment_size = line_starts.size();
+                line_starts.resize(comment_size + comment_newline);
+                line_starts[comment_size] *= !comment_newline;
+                line_starts[comment_size] += (current_pos + 1) * comment_newline;
 
                 current_pos += 1 + end_of_comment;
                 in_comment &= !end_of_comment;
@@ -368,11 +380,11 @@ namespace yu::compiler
 
     HOT_FUNCTION std::pair<uint32_t, uint32_t> Lexer::get_line_col(const lang::token_t &token) const
     {
-        const auto it = std::upper_bound(line_starts.begin(), line_starts.end(), token.start);
+        const auto it = std::ranges::upper_bound(line_starts, token.start);
         return { std::distance(line_starts.begin(), it), token.start - *(it - 1) + 1 };
     }
 
-    HOT_FUNCTION lang::token_i Lexer::get_token_type(char c)
+    HOT_FUNCTION lang::token_i Lexer::get_token_type(const char c)
     {
         const uint8_t char_class = char_type[static_cast<uint8_t>(c)];
         const lang::token_i single_token = single_char_tokens[static_cast<uint8_t>(c)];
@@ -386,11 +398,11 @@ namespace yu::compiler
         return { src + token.start, token.length };
     }
 
-    HOT_FUNCTION std::string_view Lexer::get_token_value(size_t pos)
+    HOT_FUNCTION std::string_view Lexer::get_token_value(const size_t pos)
     {
         return {
-            src + tokens.starts[static_cast<std::vector<unsigned>::size_type>(pos)],
-            tokens.lengths[static_cast<std::vector<unsigned>::size_type>(pos)]
+            src + tokens.starts[pos],
+            tokens.lengths[pos]
         };
     }
 }

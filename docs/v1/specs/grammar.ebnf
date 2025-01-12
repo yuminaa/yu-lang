@@ -1,64 +1,55 @@
 Program         ::= (ImportDecl | Declaration)*
-
-ImportDecl      ::= 'import' ('{' ImportList '}' 'from')? StringLit ('as' Ident)?
+ImportDecl      ::= 'import' ('{' ImportList '}' 'from' | Ident ('as' Ident)?) StringLit ';'
 ImportList      ::= Ident (',' Ident)*
-
-Declaration     ::= ClassDecl | FunctionDecl | VariableDecl
-
-ClassDecl       ::= Attribute* Access? 'class' Ident GenericParams?
-                  Inheritance? '{' ClassMember* '}'
-Inheritance     ::= ':' TypeName
+Declaration     ::= (Attribute | Access)* (ClassDecl | FunctionDecl | VariableDecl | EnumDecl)
+ClassDecl       ::= 'class' Ident GenericParams? ('extends' TypeName)? '{' ClassMember* '}'
 ClassMember     ::= Access? (VariableDecl | FunctionDecl | OperatorDecl)
-
-FunctionDecl    ::= Attribute* Access? 'function' Ident GenericParams?
-                  '(' ParamList? ')' '->' TypeName Block
-OperatorDecl    ::= 'operator' ('new' | '=' | '+' | '-' | '*' | '/' | '%')
-                  '(' ParamList? ')' '->' TypeName Block
-
-VariableDecl    ::= Attribute* ('var' | 'const') Ident TypeAnnotation?
-                  ('=' Expression)?
+FunctionDecl    ::= ('async' | 'inline')? 'function' Ident GenericParams? '(' ParamList? ')' '->' TypeName Block
+OperatorDecl    ::= 'operator' Operator '(' ParamList? ')' '->' TypeName Block
+Operator        ::= 'new' | 'delete' | '=' | '+' | '-' | '*' | '/' | '%' | '[]'
+VariableDecl    ::= ('var' | 'const') Ident TypeAnnotation? ('=' Expression)? ';'
+EnumDecl        ::= 'enum' Ident '{' EnumMember (',' EnumMember)* '}'
+EnumMember      ::= Ident ('=' Expression)?
 TypeAnnotation  ::= ':' TypeName
-
 GenericParams   ::= '<' Ident (',' Ident)* '>'
 ParamList       ::= Parameter (',' Parameter)*
 Parameter       ::= Ident ':' TypeName
-
-TypeName        ::= Ident | GenericType | ArrayType | PtrType
+TypeName        ::= BasicType | GenericType | ArrayType | PtrType | 'void' | 'Result' '<' TypeName ',' TypeName '>'
+BasicType       ::= 'u8' | 'i8' | 'u16' | 'i16' | 'u32' | 'i32' | 'u64' | 'i64' | 'f32' | 'f64' | 'string' | 'boolean'
 GenericType     ::= Ident '<' TypeName (',' TypeName)* '>'
 ArrayType       ::= '[' TypeName ']'
 PtrType         ::= 'Ptr' '<' TypeName '>'
-
 Block           ::= '{' Statement* '}'
-Statement       ::= VariableDecl | Expression | IfStmt | WhileStmt |
-                  ForStmt | ReturnStmt | BreakStmt | ContinueStmt |
-                  TryStmt | Block
-
-IfStmt          ::= 'if' '(' Expression ')' Block
-                  ('else' 'if' '(' Expression ')' Block)*
-                  ('else' Block)?
+Statement       ::= VarDecl | Expression ';' | IfStmt | WhileStmt | ForStmt | ReturnStmt |
+                  BreakStmt | ContinueStmt | TryStmt | Block | SwitchStmt
+IfStmt          ::= 'if' '(' Expression ')' Block ('else' 'if' '(' Expression ')' Block)* ('else' Block)?
 WhileStmt       ::= 'while' '(' Expression ')' Block
 ForStmt         ::= 'for' '(' ForInit? ';' Expression? ';' Expression? ')' Block
 ForInit         ::= VariableDecl | Expression
+SwitchStmt      ::= 'switch' '(' Expression ')' '{' CaseStmt* DefaultStmt? '}'
+CaseStmt        ::= 'case' Expression ':' Statement* 'break' ';'
+DefaultStmt     ::= 'default' ':' Statement* 'break' ';'
 ReturnStmt      ::= 'return' Expression? ';'
-
-Expression      ::= Assignment | BinaryExpr | UnaryExpr | PrimaryExpr
-Assignment      ::= PrimaryExpr '=' Expression
+TryStmt         ::= 'try' Block 'catch' '(' Parameter ')' Block
+Expression      ::= Assignment | BinaryExpr | UnaryExpr | PrimaryExpr | StructInit | 'null'
+Assignment      ::= PrimaryExpr AssignOp Expression
 BinaryExpr      ::= Expression BinOp Expression
 UnaryExpr       ::= UnOp Expression
-PrimaryExpr     ::= Literal | Ident | CallExpr | MemberExpr | IndexExpr |
-                   '(' Expression ')'
-
+PrimaryExpr     ::= Literal | Ident | CallExpr | MemberExpr | IndexExpr | '(' Expression ')'
 CallExpr        ::= PrimaryExpr '(' ArgList? ')'
 MemberExpr      ::= PrimaryExpr '.' Ident
 IndexExpr       ::= PrimaryExpr '[' Expression ']'
+StructInit      ::= Ident '{' (Ident '=' Expression (',' Ident '=' Expression)*)? '}'
 ArgList         ::= Expression (',' Expression)*
-
-BinOp           ::= '+' | '-' | '*' | '/' | '%' | '&&' | '||' | '==' | '!=' |
-                   '<' | '>' | '<=' | '>=' | '&' | '|' | '^' | '<<' | '>>'
+BinOp           ::= '+' | '-' | '*' | '/' | '%' | '&&' | '||' | '==' | '!=' | '<' | '>' | '<=' | '>=' |
+                  '&' | '|' | '^' | '<<' | '>>' | '->'
 UnOp            ::= '-' | '!' | '~'
-
-Access          ::= 'public' | 'private' | 'protect'
-Attribute       ::= '@' Ident ('(' Expression ')')?
-
-Literal         ::= IntLit | FloatLit | StringLit | BoolLit | NullLit
+AssignOp        ::= '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>='
+Access          ::= 'public' | 'private' | 'protected' | 'static'
+Attribute       ::= '@' ('align' '(' Expression ')' | 'packed' | 'volatile' | 'lazy' | 'deprecated' | 'nodiscard' | 'pure' | 'tailrec')
+Literal         ::= IntLit | FloatLit | StringLit | BoolLit
+IntLit          ::= [0-9]+ | '0x'[0-9a-fA-F]+ | '0b'[01]+
+FloatLit        ::= [0-9]+'.'[0-9]+
+StringLit       ::= '\'' [^']* '\''
+BoolLit         ::= 'true' | 'false'
 Ident           ::= [a-zA-Z_][a-zA-Z0-9_]*
