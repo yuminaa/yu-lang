@@ -5,6 +5,7 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/vendor/googletest ${CMAKE_BINARY_DIR}/googl
 
 add_executable(YU_TEST
         unittest/tokenizing.cpp
+        unittest/parsing.cpp
 )
 
 target_include_directories(YU_TEST PRIVATE

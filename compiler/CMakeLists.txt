@@ -2,20 +2,16 @@
 # See LICENSE.txt for details
 
 set(COMPILER_SRC
-        lexer.h
-        parser.h
-        ir.h
-        token.h
-        builder.h
-        analyzer.h
+        include/lexer.h
+        include/parser.h
+        include/token.h
 
-        impl/lexer.cpp
-        impl/parser.cpp
-        impl/token.cpp
-        codegen/x86.h
-        impl/builder.cpp
-        impl/analyzer.cpp
-        codegen/impl/x86.cpp
+        src/lexer.cpp
+        src/parser.cpp
+        src/token.cpp
+
+        ../common/styles.h
+        ../common/arch.hpp
 )
 
 add_library(YU_COMPILER STATIC ${COMPILER_SRC})

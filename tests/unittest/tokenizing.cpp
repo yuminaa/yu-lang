@@ -1,10 +1,9 @@
 // This file is part of the Yu programming language and is licensed under MIT License;
 // See LICENSE.txt for details
 
-// ReSharper disable CppDFAUnusedValue
 #include <iomanip>
 #include <gtest/gtest.h>
-#include "../../compiler/lexer.h"
+#include "../../compiler/include/lexer.h"
 
 using namespace yu::compiler;
 using namespace yu::lang;
@@ -253,7 +252,7 @@ protected:
             << "Actual:   '" << actual_value << "'";
     }
 
-    void dump_tokens(const TokenList *tokens, Lexer lexer) const
+    static void dump_tokens(const TokenList *tokens, const Lexer &lexer)
     {
         std::cout << TokenPrinter::print(*tokens, lexer);
     }

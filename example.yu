@@ -1,34 +1,3 @@
-import { io } from 'sys';
-
-@align(16)
-class Vector3
-{
-    var x: i32 = 0;
-    var y: i32 = 0;
-    var z: i32 = 0;
-};
-
-class Player : Entity
-{
-    private var position: Vector3 = Vector3({ x = 10, y = 20, z = -10 });
-    private var velocity: Vector3 = Vector3();
-
-    public operator new() -> Player
-    {
-        return new Ptr<Player>();
-    }
-
-    public function MoveTo(target: Vector3) -> void
-    {
-        this.position = target;
-    }
-};
-
-class Generic<T>
-{
-    var value: T;
-    public function GetValue() -> T
-    {
-        return this.value;
-    }
-};
+var x = 4;
+var y = 5;
+var z = 6
