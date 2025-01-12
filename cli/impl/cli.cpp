@@ -72,46 +72,39 @@ int main(const int argc, char *argv[])
         return 1;
     }
 
-    // Vector to store parsing results
     std::vector<ParseResult> parse_results(argc - 1);
     std::vector<std::thread> parse_threads;
-
-    // Create a thread for each file
-    for (int i = 1; i < argc; ++i)
+    for (auto i = 1; i < argc; ++i)
     {
         parse_threads.emplace_back(parse_file, argv[i], std::ref(parse_results[i - 1]));
     }
 
-    // Wait for all threads to complete
     for (auto &thread: parse_threads)
-    {
         thread.join();
-    }
 
-    // Process results
-    bool overall_success = true;
-    for (const auto &result: parse_results)
+    auto overall_success = true;
+    for (const auto &[filename, success, error_message, var_decls, symbols]: parse_results)
     {
         {
-            std::lock_guard<std::mutex> lock(cout_mutex);
-            std::cout << "File: " << result.filename << std::endl;
+            std::lock_guard lock(cout_mutex);
+            std::cout << "File: " << filename << std::endl;
         }
 
-        if (!result.success)
+        if (!success)
         {
             {
                 std::lock_guard<std::mutex> lock(cout_mutex);
-                std::cerr << "Error parsing " << result.filename
-                        << ": " << result.error_message << std::endl;
+                std::cerr << "Error parsing " << filename
+                        << ": " << error_message << std::endl;
             }
             overall_success = false;
         }
         else
         {
-            std::lock_guard<std::mutex> lock(cout_mutex);
-            for (size_t j = 0; j < result.var_decls.names.size(); ++j)
+            std::lock_guard lock(cout_mutex);
+            for (size_t j = 0; j < var_decls.names.size(); ++j)
             {
-                std::cout << "Parsed variable: " << result.var_decls.names[j] << std::endl;
+                std::cout << "Parsed variable: " << var_decls.names[j] << std::endl;
             }
         }
     }

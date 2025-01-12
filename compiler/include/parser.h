@@ -3,11 +3,11 @@
 
 #pragma once
 
+#include <limits>
+#include <vector>
+#include "lexer.h"
 #include "token.h"
 #include "../../common/arch.hpp"
-#include <vector>
-
-#include "lexer.h"
 
 namespace yu::compiler
 {
@@ -161,13 +161,13 @@ namespace yu::compiler
         std::vector<ParseError> warnings;
         lang::token_t current_token;
 
-        ALWAYS_INLINE bool is_at_end() const;
+        bool is_at_end() const;
 
-        ALWAYS_INLINE const lang::token_t &advance();
+        const lang::token_t &advance();
 
-        ALWAYS_INLINE bool match(lang::token_i type);
+        bool match(lang::token_i type);
 
-        ALWAYS_INLINE void update_current_token();
+        void update_current_token();
 
         uint32_t infer_type(uint32_t expr_index);
 

@@ -159,7 +159,7 @@ namespace yu::compiler
                 source + tokens.starts[current],
                 tokens.lengths[current]
             };
-            param_names.push_back(param_name);
+            param_names.emplace_back(param_name);
             advance();
 
             if (current_token.type != lang::token_i::COLON)
@@ -194,8 +194,8 @@ namespace yu::compiler
                 0
             );
 
-            param_types.push_back(type_result.value);
-            types.function_params.push_back(type_result.value);
+            param_types.emplace_back(type_result.value);
+            types.function_params.emplace_back(type_result.value);
             param_count++;
 
             if (current_token.type == lang::token_i::COMMA)
@@ -259,13 +259,13 @@ namespace yu::compiler
         symbols.type_indices[func_symbol_index] = return_type_result.value;
 
         const uint32_t function_type_index = types.names.size();
-        types.names.push_back("function");
-        types.function_param_starts.push_back(param_start);
-        types.function_param_counts.push_back(param_count);
-        types.function_return_types.push_back(return_type_result.value);
+        types.names.emplace_back("function");
+        types.function_param_starts.emplace_back(param_start);
+        types.function_param_counts.emplace_back(param_count);
+        types.function_return_types.emplace_back(return_type_result.value);
 
-        types.generic_starts.push_back(0);
-        types.generic_counts.push_back(0);
+        types.generic_starts.emplace_back(0);
+        types.generic_counts.emplace_back(0);
 
         if (current_token.type != lang::token_i::LEFT_BRACE)
         {
@@ -400,7 +400,7 @@ namespace yu::compiler
         {
             report_error(create_parse_error(
                 ParseErrorFlags::UNEXPECTED_TOKEN,
-                ErrorSeverity::ERROR,
+                ErrorSeverity::WARNING,
                 "Expected ';' at the end of variable declaration",
                 "Add ';' to complete the variable declaration",
                 current
@@ -782,7 +782,7 @@ namespace yu::compiler
         {
             report_error(create_parse_error(
                 ParseErrorFlags::UNEXPECTED_TOKEN,
-                ErrorSeverity::ERROR,
+                ErrorSeverity::WARNING,
                 "Expected ';' after return statement",
                 "End return statement with ';'",
                 current
@@ -854,7 +854,7 @@ namespace yu::compiler
                 static_cast<uint8_t>(SymbolFlags::IS_GENERIC_PARAM)
             );
 
-            types.generic_params.push_back(param_index);
+            types.generic_params.emplace_back(param_index);
             generic_count++;
             advance();
 
@@ -885,8 +885,8 @@ namespace yu::compiler
         }
 
         advance();
-        types.generic_starts.push_back(generic_start);
-        types.generic_counts.push_back(generic_count);
+        types.generic_starts.emplace_back(generic_start);
+        types.generic_counts.emplace_back(generic_count);
 
         return ParseResult(generic_start);
     }
@@ -912,7 +912,7 @@ namespace yu::compiler
         {
             report_error(create_parse_error(
                 ParseErrorFlags::UNEXPECTED_TOKEN,
-                ErrorSeverity::ERROR,
+                ErrorSeverity::WARNING,
                 "Expected ';' after expression",
                 "End expression statement with ';'",
                 current
@@ -943,7 +943,7 @@ namespace yu::compiler
 
         if (current_token.type == lang::token_i::FUNCTION)
         {
-            uint32_t param_start = types.function_params.size();
+            const uint32_t param_start = types.function_params.size();
             uint32_t param_count = 0;
             uint32_t generic_start = std::numeric_limits<uint32_t>::max();
             uint32_t generic_count = 0;
@@ -1027,8 +1027,8 @@ namespace yu::compiler
                     return ParseResult<uint32_t>::failure();
                 }
 
-                param_types.push_back(type_result.value);
-                types.function_params.push_back(type_result.value);
+                param_types.emplace_back(type_result.value);
+                types.function_params.emplace_back(type_result.value);
                 param_count++;
                 if (is_variadic)
                 {
@@ -1112,20 +1112,20 @@ namespace yu::compiler
             }
 
             const uint32_t function_type_index = types.names.size();
-            types.names.push_back("function");
-            types.function_param_starts.push_back(param_start);
-            types.function_param_counts.push_back(param_count);
-            types.function_return_types.push_back(return_type_result.value);
+            types.names.emplace_back("function");
+            types.function_param_starts.emplace_back(param_start);
+            types.function_param_counts.emplace_back(param_count);
+            types.function_return_types.emplace_back(return_type_result.value);
 
             if (generic_start != std::numeric_limits<uint32_t>::max())
             {
-                types.generic_starts.push_back(generic_start);
-                types.generic_counts.push_back(generic_count);
+                types.generic_starts.emplace_back(generic_start);
+                types.generic_counts.emplace_back(generic_count);
             }
             else
             {
-                types.generic_starts.push_back(0);
-                types.generic_counts.push_back(0);
+                types.generic_starts.emplace_back(0);
+                types.generic_counts.emplace_back(0);
             }
 
             if (current_token.type != lang::token_i::LEFT_BRACE)
@@ -1162,8 +1162,8 @@ namespace yu::compiler
         if (current_token.type == lang::token_i::LEFT_PAREN)
         {
             advance();
-            auto inner_expr = parse_expression();
-            if (!inner_expr)
+            if (const auto inner_expr = parse_expression();
+                !inner_expr)
             {
                 report_error(create_parse_error(
                     ParseErrorFlags::INVALID_SYNTAX,
