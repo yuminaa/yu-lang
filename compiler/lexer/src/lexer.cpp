@@ -8,6 +8,7 @@
 #include "../include/lexer.h"
 #include <array>
 #include <cstdint>
+#include "../../../common/arch.hpp"
 
 namespace yu::compiler
 {
@@ -26,47 +27,47 @@ namespace yu::compiler
         return types;
     }();
 
-    static constexpr std::array<lang::token_i, 256> single_char_tokens = []
+    static constexpr std::array<lang::TokenType, 256> single_char_tokens = []
     {
-        alignas(CACHE_LINE_SIZE) std::array<lang::token_i, 256> tokens {};
-        std::ranges::fill(tokens, lang::token_i::UNKNOWN);
+        alignas(64) std::array<lang::TokenType, 256> tokens {};
+        std::ranges::fill(tokens, lang::TokenType::UNKNOWN);
 
-        tokens['+'] = lang::token_i::PLUS;
-        tokens['-'] = lang::token_i::MINUS;
-        tokens['*'] = lang::token_i::STAR;
-        tokens['/'] = lang::token_i::SLASH;
-        tokens['%'] = lang::token_i::PERCENT;
-        tokens['='] = lang::token_i::EQUAL;
-        tokens['!'] = lang::token_i::BANG;
-        tokens['<'] = lang::token_i::LESS;
-        tokens['>'] = lang::token_i::GREATER;
-        tokens['&'] = lang::token_i::AND;
-        tokens['|'] = lang::token_i::OR;
-        tokens['^'] = lang::token_i::XOR;
-        tokens['~'] = lang::token_i::TILDE;
-        tokens['.'] = lang::token_i::DOT;
-        tokens['('] = lang::token_i::LEFT_PAREN;
-        tokens[')'] = lang::token_i::RIGHT_PAREN;
-        tokens['{'] = lang::token_i::LEFT_BRACE;
-        tokens['}'] = lang::token_i::RIGHT_BRACE;
-        tokens['['] = lang::token_i::LEFT_BRACKET;
-        tokens[']'] = lang::token_i::RIGHT_BRACKET;
-        tokens[','] = lang::token_i::COMMA;
-        tokens[':'] = lang::token_i::COLON;
-        tokens[';'] = lang::token_i::SEMICOLON;
-        tokens['?'] = lang::token_i::QUESTION;
+        tokens['+'] = lang::TokenType::PLUS;
+        tokens['-'] = lang::TokenType::MINUS;
+        tokens['*'] = lang::TokenType::STAR;
+        tokens['/'] = lang::TokenType::SLASH;
+        tokens['%'] = lang::TokenType::PERCENT;
+        tokens['='] = lang::TokenType::EQUAL;
+        tokens['!'] = lang::TokenType::BANG;
+        tokens['<'] = lang::TokenType::LESS;
+        tokens['>'] = lang::TokenType::GREATER;
+        tokens['&'] = lang::TokenType::AND;
+        tokens['|'] = lang::TokenType::OR;
+        tokens['^'] = lang::TokenType::XOR;
+        tokens['~'] = lang::TokenType::TILDE;
+        tokens['.'] = lang::TokenType::DOT;
+        tokens['('] = lang::TokenType::LEFT_PAREN;
+        tokens[')'] = lang::TokenType::RIGHT_PAREN;
+        tokens['{'] = lang::TokenType::LEFT_BRACE;
+        tokens['}'] = lang::TokenType::RIGHT_BRACE;
+        tokens['['] = lang::TokenType::LEFT_BRACKET;
+        tokens[']'] = lang::TokenType::RIGHT_BRACKET;
+        tokens[','] = lang::TokenType::COMMA;
+        tokens[':'] = lang::TokenType::COLON;
+        tokens[';'] = lang::TokenType::SEMICOLON;
+        tokens['?'] = lang::TokenType::QUESTION;
 
         return tokens;
     }();
 
     static constexpr std::array type_to_token = {
-        lang::token_i::UNKNOWN,     // 0
-        lang::token_i::UNKNOWN,     // type 1 (whitespace)
-        lang::token_i::UNKNOWN,     // type 2 (comment start)
-        lang::token_i::UNKNOWN,     // type 3 (comment end)
-        lang::token_i::IDENTIFIER,  // type 4
-        lang::token_i::NUM_LITERAL, // type 5
-        lang::token_i::STR_LITERAL  // type 6
+        lang::TokenType::UNKNOWN,     // 0
+        lang::TokenType::UNKNOWN,     // type 1 (whitespace)
+        lang::TokenType::UNKNOWN,     // type 2 (comment start)
+        lang::TokenType::UNKNOWN,     // type 3 (comment end)
+        lang::TokenType::IDENTIFIER,  // type 4
+        lang::TokenType::NUM_LITERAL, // type 5
+        lang::TokenType::STR_LITERAL  // type 6
     };
 
     static constexpr std::array<uint8_t, 256> hex_lookup = []
@@ -192,7 +193,7 @@ namespace yu::compiler
         skip_whitespace_comment(src, current_pos, src_length);
 
         if (UNLIKELY(current_pos >= src_length))
-            return { current_pos, 0, lang::token_i::END_OF_FILE, 0 };
+            return { current_pos, 0, lang::TokenType::END_OF_FILE, 0 };
 
         switch (const char c = src[current_pos]; char_type[static_cast<uint8_t>(c)])
         {
@@ -250,7 +251,7 @@ namespace yu::compiler
             }
         }
 
-        return { current_pos, length, lang::token_i::IDENTIFIER, flags };
+        return { current_pos, length, lang::TokenType::IDENTIFIER, flags };
     }
 
     HOT_FUNCTION lang::token_t Lexer::lex_number() const
@@ -321,7 +322,7 @@ namespace yu::compiler
         return {
             current_pos,
             static_cast<uint16_t>(current - start),
-            lang::token_i::NUM_LITERAL,
+            lang::TokenType::NUM_LITERAL,
             flags
         };
     }
@@ -357,7 +358,7 @@ namespace yu::compiler
         return {
             current_pos,
             static_cast<uint16_t>(current - start),
-            lang::token_i::STR_LITERAL,
+            lang::TokenType::STR_LITERAL,
             flags
         };
     }
@@ -370,7 +371,7 @@ namespace yu::compiler
             lang::token_t token = next_token();
             tokens.push_back(token);
 
-            state = token.type != lang::token_i::END_OF_FILE;
+            state = token.type != lang::TokenType::END_OF_FILE;
             current_pos += token.length * state;
             prefetch_next();
         }
@@ -384,13 +385,13 @@ namespace yu::compiler
         return { std::distance(line_starts.begin(), it), token.start - *(it - 1) + 1 };
     }
 
-    HOT_FUNCTION lang::token_i Lexer::get_token_type(const char c)
+    HOT_FUNCTION lang::TokenType Lexer::get_token_type(const char c)
     {
         const uint8_t char_class = char_type[static_cast<uint8_t>(c)];
-        const lang::token_i single_token = single_char_tokens[static_cast<uint8_t>(c)];
-        const lang::token_i type_token = type_to_token[char_class];
+        const lang::TokenType single_token = single_char_tokens[static_cast<uint8_t>(c)];
+        const lang::TokenType type_token = type_to_token[char_class];
 
-        return (single_token != lang::token_i::UNKNOWN) ? single_token : type_token;
+        return (single_token != lang::TokenType::UNKNOWN) ? single_token : type_token;
     }
 
     HOT_FUNCTION std::string_view Lexer::get_token_value(const lang::token_t &token) const

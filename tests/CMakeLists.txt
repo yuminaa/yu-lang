@@ -10,15 +10,8 @@ add_executable(YU_TEST
 
 target_include_directories(YU_TEST PRIVATE
         ${CMAKE_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/frontend/include
         ${CMAKE_SOURCE_DIR}/vendor/googletest/googletest/include
 )
-
-if (APPLE)
-    target_link_directories(YU_TEST PRIVATE
-            /opt/homebrew/opt/llvm/lib
-    )
-endif ()
 
 add_dependencies(YU_TEST YU_COMPILER)
 
