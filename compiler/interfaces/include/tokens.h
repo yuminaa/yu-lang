@@ -233,7 +233,7 @@ namespace yu::lang
     /**
      * @brief Represents a token that the lexer has found.
      */
-    struct alignas(8) token_t
+    struct alignas(8) Token
     {
         uint32_t start;
         uint16_t length;
@@ -251,7 +251,7 @@ namespace yu::lang
         std::vector<TokenType> types;
         std::vector<uint8_t> flags;
 
-        void emplace_back(const token_t &token)
+        void emplace_back(const Token &token)
         {
             starts.emplace_back(token.start);
             lengths.emplace_back(token.length);
@@ -259,7 +259,7 @@ namespace yu::lang
             flags.emplace_back(token.flags);
         }
 
-        void push_back(const token_t &token)
+        void push_back(const Token &token)
         {
             starts.push_back(token.start);
             lengths.push_back(token.length);
@@ -298,7 +298,7 @@ namespace yu::lang
         return map;
     }
 
-    inline std::string_view token_type_to_string(const TokenType &type)
+    inline std::string_view Tokenype_to_string(const TokenType &type)
     {
         static constexpr auto reverse_token_map = create_reverse_map();
         const auto idx = static_cast<size_t>(type);

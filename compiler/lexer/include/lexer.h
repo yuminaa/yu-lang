@@ -35,14 +35,14 @@ namespace yu::compiler
          * @param token The token.
          * @return pair of line and column.
          */
-        std::pair<uint32_t, uint32_t> get_line_col(const lang::token_t &token) const;
+        std::pair<uint32_t, uint32_t> get_line_col(const lang::Token &token) const;
 
         /**
          * @brief Get the string value of a token.
          * @param token The token.
          * @return std::string_view The string value of the token.
          */
-        std::string_view get_token_value(const lang::token_t &token) const;
+        std::string_view get_token_value(const lang::Token &token) const;
 
         std::string_view get_token_value(size_t pos);
 
@@ -53,7 +53,7 @@ namespace yu::compiler
          */
         static lang::TokenType get_token_type(char c);
 
-     std::vector<uint32_t> line_starts;
+        std::vector<uint32_t> line_starts;
 
     private:
         const char *src {};
@@ -64,9 +64,9 @@ namespace yu::compiler
 
         /**
          * @brief Returns the next token.
-         * @return token_t The next token.
+         * @return Token The next token.
          */
-        lang::token_t next_token();
+        lang::Token next_token();
 
         /**
          * @brief Prefetch the next token for optimization.
@@ -80,24 +80,24 @@ namespace yu::compiler
          * @param src_length The length of the source code.
         */
         void skip_whitespace_comment(const char *src, uint32_t &current_pos,
-                                                                uint32_t src_length);
+                                     uint32_t src_length);
 
         /**
          * @brief Checks if the token is a keyword or an identifier or a type.
-         * @return token_t The token type.
+         * @return Token The token type.
          */
-        lang::token_t lex_identifier() const;
+        lang::Token lex_identifier() const;
 
         /**
          * @brief Checks if the token is a number literal. Allows for floating point numbers, hexadecimals, and binary numbers.
-         * @return token_t The token type.
+         * @return Token The token type.
          */
-        lang::token_t lex_number() const;
+        lang::Token lex_number() const;
 
         /**
          * @brief Checks if the token is a string literal. Allows for escape sequences.
-         * @return token_t The token type.
+         * @return Token The token type.
          */
-        lang::token_t lex_string() const;
+        lang::Token lex_string() const;
     };
 }

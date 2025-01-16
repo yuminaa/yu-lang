@@ -204,7 +204,7 @@ public:
         return ss.str();
     }
 
-    static std::string print(const token_t &token, const Lexer &lexer)
+    static std::string print(const Token &token, const Lexer &lexer)
     {
         std::stringstream ss;
         auto [line, col] = lexer.get_line_col(token);
@@ -231,7 +231,7 @@ protected:
         ASSERT_LT(index, tokens->types.size())
             << "Token index out of range";
 
-        const token_t token = {
+        const Token token = {
             tokens->starts[index],
             tokens->lengths[index],
             tokens->types[index],
@@ -678,14 +678,14 @@ TEST_F(LexerTest, Array)
     EXPECT_EQ(tokens->types[i++], TokenType::IDENTIFIER);
     EXPECT_EQ(tokens->types[i++], TokenType::COLON);
 
-    // Array type syntax [ u8 ]
+    // array type syntax [ u8 ]
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACKET);
     EXPECT_EQ(tokens->types[i++], TokenType::U8);
     EXPECT_EQ(tokens->types[i++], TokenType::RIGHT_BRACKET);
 
     EXPECT_EQ(tokens->types[i++], TokenType::EQUAL);
 
-    // Array literal { 1, 2, 3, 4, 5 }
+    // array literal { 1, 2, 3, 4, 5 }
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::NUM_LITERAL);
     EXPECT_EQ(tokens->types[i++], TokenType::COMMA);
@@ -699,14 +699,14 @@ TEST_F(LexerTest, Array)
     EXPECT_EQ(tokens->types[i++], TokenType::RIGHT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::SEMICOLON);
 
-    // Second array declaration (nested): var nested: [ [ u8 ] ] = { { 1, 2 }, { 3, 4 }, { 5 } };
+    // second array declaration (nested): var nested: [ [ u8 ] ] = { { 1, 2 }, { 3, 4 }, { 5 } };
     EXPECT_EQ(tokens->types[i++], TokenType::VAR);
 
     EXPECT_EQ(tokens->types[i++], TokenType::IDENTIFIER);
 
     EXPECT_EQ(tokens->types[i++], TokenType::COLON);
 
-    // Nested array type [ [ u8 ] ]
+    // nested array type [ [ u8 ] ]
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACKET);
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACKET);
     EXPECT_EQ(tokens->types[i++], TokenType::U8);
@@ -715,10 +715,10 @@ TEST_F(LexerTest, Array)
 
     EXPECT_EQ(tokens->types[i++], TokenType::EQUAL);
 
-    // Nested array literal { { 1, 2 }, { 3, 4 }, { 5 } }
+    // nested array literal { { 1, 2 }, { 3, 4 }, { 5 } }
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACE);
 
-    // First inner array { 1, 2 }
+    // first inner array { 1, 2 }
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::NUM_LITERAL);
     EXPECT_EQ(tokens->types[i++], TokenType::COMMA);
@@ -726,7 +726,7 @@ TEST_F(LexerTest, Array)
     EXPECT_EQ(tokens->types[i++], TokenType::RIGHT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::COMMA);
 
-    // Second inner array { 3, 4 }
+    // second inner array { 3, 4 }
     EXPECT_EQ(tokens->types[i++], TokenType::LEFT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::NUM_LITERAL);
     EXPECT_EQ(tokens->types[i++], TokenType::COMMA);
@@ -741,7 +741,6 @@ TEST_F(LexerTest, Array)
     EXPECT_EQ(tokens->types[i++], TokenType::RIGHT_BRACE);
     EXPECT_EQ(tokens->types[i++], TokenType::SEMICOLON);
 
-    // Verify we got all tokens and the count is correct
     EXPECT_EQ(tokens->types[i++], TokenType::END_OF_FILE);
     EXPECT_EQ(i, tokens->size());
 }

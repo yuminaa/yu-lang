@@ -133,7 +133,7 @@ class Optional<T>
 
 ### Type Inference
 
-Type inference follows Luau rules while maintaining explicit typing when needed:
+Type inference follows these rules while maintaining explicit typing when needed:
 
 ```yu
 // Explicit (preferred for complex types)
@@ -142,7 +142,7 @@ var map: HashMap<string, i32> = new HashMap();
 
 // Inferred (acceptable for obvious types)
 var name = "John";
-var numbers = [1, 2, 3];
+var numbers = [ 1, 2, 3 ];
 ```
 
 ## Variables

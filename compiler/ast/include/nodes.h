@@ -19,7 +19,9 @@ namespace yu::ast
         VAR_DECL,
         FUNCTION_DECL,
         RETURN,
-        EXPRESSION_STMT
+        EXPRESSION_STMT,
+
+        GENERIC_PARAM
     };
 
     enum class ExprFlags : uint8_t
@@ -29,6 +31,7 @@ namespace yu::ast
         PURE = 1 << 1,
         EVALUATED = 1 << 2,
         HAS_SIDE_EFFECTS = 1 << 3,
+        VARIADIC = 1 << 4
     };
 
     enum class StmtFlags : uint8_t

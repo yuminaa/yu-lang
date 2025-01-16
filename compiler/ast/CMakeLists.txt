@@ -3,10 +3,11 @@
 
 set(AST_SRC
         include/nodes.h
-        src/nodes.cpp
+        src/expressions.cpp
         include/expressions.h
         include/statements.h
         include/ast.h
+        src/statements.cpp
 )
 
 add_library(YU_AST STATIC ${AST_SRC})

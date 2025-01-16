@@ -11,7 +11,7 @@ namespace yu::ast
         std::vector<NodeType> types;
         std::vector<uint32_t> lines;
         std::vector<uint32_t> columns;
-        std::vector<uint32_t> type_indices; // Reference to TypeList
+        std::vector<uint32_t> type_indices;
         std::vector<ExprFlags> flags;
 
         std::vector<uint32_t> left_expr_indices;
@@ -30,6 +30,7 @@ namespace yu::ast
         std::vector<uint32_t> arg_list_starts;
         std::vector<uint32_t> arg_list_lengths;
         std::vector<uint32_t> arg_indices;
+        std::vector<uint32_t> nested_generic_indices;
 
         uint32_t add_binary(uint32_t left, lang::TokenType op, uint32_t right,
                             uint32_t line, uint32_t col);
@@ -39,10 +40,14 @@ namespace yu::ast
 
         uint32_t add_literal(std::string_view value, uint32_t line, uint32_t col);
 
-        uint32_t add_variable(std::string_view name, uint32_t symbol_idx,
-                              uint32_t line, uint32_t col);
+        uint32_t add_identifier(std::string_view name, uint32_t symbol_idx,
+                                uint32_t line, uint32_t col);
 
         uint32_t add_call(uint32_t callee, const std::vector<uint32_t> &args,
                           uint32_t line, uint32_t col);
+
+        uint32_t add_generic_param(std::string_view name, uint32_t symbol_idx,
+                           bool is_variadic, uint32_t line, uint32_t col,
+                           uint32_t nested_generic_idx = std::numeric_limits<uint32_t>::max());
     };
 }

@@ -51,5 +51,7 @@ namespace yu::ast
         uint32_t add_function(std::string_view name, uint32_t type_idx,
                               const std::vector<uint32_t> &params,
                               uint32_t body_idx, uint32_t line, uint32_t col);
+
+        uint32_t add_expression_statement(uint32_t expr_idx, uint32_t line, uint32_t col);
     };
 } // namespace yu::ast

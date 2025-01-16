@@ -8,7 +8,7 @@
 #include "../include/lexer.h"
 #include <array>
 #include <cstdint>
-#include "../../../common/arch.hpp"
+#include "../../../include/arch.hpp"
 
 namespace yu::compiler
 {
@@ -188,7 +188,7 @@ namespace yu::compiler
         }
     }
 
-    ALWAYS_INLINE HOT_FUNCTION lang::token_t Lexer::next_token()
+    ALWAYS_INLINE HOT_FUNCTION lang::Token Lexer::next_token()
     {
         skip_whitespace_comment(src, current_pos, src_length);
 
@@ -208,7 +208,7 @@ namespace yu::compiler
         }
     }
 
-    HOT_FUNCTION lang::token_t Lexer::lex_identifier() const
+    HOT_FUNCTION lang::Token Lexer::lex_identifier() const
     {
         const char *start = src + current_pos;
         const char *current = start;
@@ -242,19 +242,19 @@ namespace yu::compiler
         const uint16_t length = current - start;
         const std::string_view text(start, length);
 
-        for (const auto &[token_text, token_type]: lang::token_map)
+        for (const auto &[Tokenext, Tokenype]: lang::token_map)
         {
-            if (token_text.length() == length &&
-                memcmp(token_text.data(), text.data(), length) == 0)
+            if (Tokenext.length() == length &&
+                memcmp(Tokenext.data(), text.data(), length) == 0)
             {
-                return { current_pos, length, token_type, flags };
+                return { current_pos, length, Tokenype, flags };
             }
         }
 
         return { current_pos, length, lang::TokenType::IDENTIFIER, flags };
     }
 
-    HOT_FUNCTION lang::token_t Lexer::lex_number() const
+    HOT_FUNCTION lang::Token Lexer::lex_number() const
     {
         const char *start = src + current_pos;
         const char *current = start;
@@ -327,7 +327,7 @@ namespace yu::compiler
         };
     }
 
-    HOT_FUNCTION lang::token_t Lexer::lex_string() const
+    HOT_FUNCTION lang::Token Lexer::lex_string() const
     {
         const char *start = src + current_pos;
         const char *current = start + 1;
@@ -368,7 +368,7 @@ namespace yu::compiler
         uint32_t state = 1;
         while (state)
         {
-            lang::token_t token = next_token();
+            lang::Token token = next_token();
             tokens.push_back(token);
 
             state = token.type != lang::TokenType::END_OF_FILE;
@@ -379,7 +379,7 @@ namespace yu::compiler
         return &tokens;
     }
 
-    HOT_FUNCTION std::pair<uint32_t, uint32_t> Lexer::get_line_col(const lang::token_t &token) const
+    HOT_FUNCTION std::pair<uint32_t, uint32_t> Lexer::get_line_col(const lang::Token &token) const
     {
         const auto it = std::ranges::upper_bound(line_starts, token.start);
         return { std::distance(line_starts.begin(), it), token.start - *(it - 1) + 1 };
@@ -394,7 +394,7 @@ namespace yu::compiler
         return (single_token != lang::TokenType::UNKNOWN) ? single_token : type_token;
     }
 
-    HOT_FUNCTION std::string_view Lexer::get_token_value(const lang::token_t &token) const
+    HOT_FUNCTION std::string_view Lexer::get_token_value(const lang::Token &token) const
     {
         return { src + token.start, token.length };
     }

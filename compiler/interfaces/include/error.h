@@ -1,11 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../../../common/styles.h"
+#include "../../../include/styles.h"
 
 namespace yu::compiler
 {
@@ -29,6 +28,8 @@ namespace yu::compiler
     template<typename SourceT = const char *>
     struct BasicParseError
     {
+        using source_type = SourceT;
+
         ParseErrorFlags flags;
         ErrorSeverity severity;
         std::string message;
@@ -41,15 +42,13 @@ namespace yu::compiler
         std::string error_pointer;
     };
 
-    // Deduction guide
     template<typename SourceT>
     BasicParseError(ParseErrorFlags, ErrorSeverity, std::string, std::string,
                     SourceT, const char *, uint32_t, uint32_t, std::string, std::string)
         -> BasicParseError<SourceT>;
 
-    using ParseError = BasicParseError<const char *>;
+    using ParseError = BasicParseError<>;
 
-    // Error code mapping trait
     template<typename T>
     struct ErrorCodeMapping
     {
@@ -77,18 +76,8 @@ namespace yu::compiler
         }
     };
 
-    // Customization point for error formatting
     template<typename ErrorT>
-    struct ErrorFormatter
-    {
-        static std::string format_message(const ErrorT &error);
-
-        static std::string format_location(const ErrorT &error);
-
-        static std::string format_pointer(const ErrorT &error);
-
-        static std::string format_suggestion(const ErrorT &error);
-    };
+    struct ErrorFormatter;
 
     template<typename ErrorT = ParseError,
         typename FormatterT = ErrorFormatter<ErrorT>,
@@ -100,8 +89,21 @@ namespace yu::compiler
         using formatter_type = FormatterT;
         using storage_type = StorageT;
 
-        template<typename... Args>
-        BasicErrorReporter(Args &&... args) : storage_args(std::forward<Args>(args)...) {}
+        BasicErrorReporter(): filename(nullptr)
+        {
+            errors.reserve(32);
+            warnings.reserve(32);
+        }
+
+        BasicErrorReporter(typename ErrorT::source_type source, const char* filename)
+        : source(source), filename(filename)
+        {
+            errors.reserve(32);
+            warnings.reserve(32);
+        }
+
+        explicit BasicErrorReporter(size_t initial_capacity) : errors(initial_capacity), warnings(initial_capacity),
+                                                               filename(nullptr) {}
 
         void report_error(const ErrorT &error)
         {
@@ -111,27 +113,21 @@ namespace yu::compiler
                                         ? styles::color::YELLOW
                                         : styles::color::RED;
 
-                // Main error message
                 std::cerr << color
                         << FormatterT::format_message(error)
                         << styles::color::RESET << "\n";
 
-                // Location
                 std::cerr << FormatterT::format_location(error) << "\n";
-
-                // Source line and pointer if available
                 if (!error.source_line.empty())
                 {
                     std::cerr << FormatterT::format_pointer(error) << "\n";
                 }
 
-                // Suggestion if available
                 if (!error.suggestion.empty())
                 {
                     std::cerr << FormatterT::format_suggestion(error) << "\n";
                 }
 
-                // Error code
                 std::cerr << styles::color::BLUE << "   = " << styles::color::RESET
                         << "note: error[" << ErrorCodeMapping<ParseErrorFlags>::get_code(error.flags) << "]\n";
             }
@@ -170,7 +166,8 @@ namespace yu::compiler
     private:
         storage_type errors;
         storage_type warnings;
-        StorageT storage_args;
+        const char* filename;
+        typename ErrorT::source_type source;
     };
 
     template<typename ErrorT>
@@ -184,28 +181,28 @@ namespace yu::compiler
 
         static std::string format_location(const ErrorT &error)
         {
-            return "  " + styles::color::BLUE + "-->" + styles::color::RESET + " "
+            return std::string("  ") + styles::color::BLUE + "-->" + styles::color::RESET + " "
                    + error.filename + ":" + std::to_string(error.line)
                    + ":" + std::to_string(error.column);
         }
 
         static std::string format_pointer(const ErrorT &error)
         {
-            return styles::color::BLUE + "   |" + styles::color::RESET + "\n"
-                   + styles::color::BLUE + std::setw(3) + std::to_string(error.line)
-                   + "|" + styles::color::RESET + " " + error.source_line + "\n"
-                   + styles::color::BLUE + "   |" + styles::color::RESET + " "
+            return styles::color::BLUE + std::string("   |") + styles::color::RESET + std::string("\n")
+                   + styles::color::BLUE + std::string(std::to_string(error.line), 3, ' ')
+                   + std::string("|") + styles::color::RESET + std::string(" ") + error.source_line + std::string("\n")
+                   + styles::color::BLUE + std::string("   |") + styles::color::RESET + std::string(" ")
                    + error.error_pointer;
         }
 
         static std::string format_suggestion(const ErrorT &error)
         {
-            return styles::color::BLUE + "   |" + styles::color::RESET + "\n"
+            return styles::color::BLUE + std::string("   |") + styles::color::RESET + "\n"
                    + styles::color::BLUE + "   = " + styles::color::RESET
                    + styles::color::GREEN + "help" + styles::color::RESET
                    + ": " + error.suggestion;
         }
     };
 
-    using DefaultErrorReporter = BasicErrorReporter<ParseError>;
+    using DefaultErrorReporter = BasicErrorReporter<>;
 }

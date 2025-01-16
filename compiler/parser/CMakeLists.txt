@@ -6,7 +6,6 @@ set(PARSER_SRC
         include/symbol.h
 
         src/parser.cpp
-        src/symbol.cpp
 )
 
 add_library(YU_PARSER STATIC ${PARSER_SRC})

@@ -1,8 +1,9 @@
 #pragma once
+
 #include <memory>
-#include "../../interfaces/include/error.h"
 #include "symbol.h"
 #include "../../ast/include/ast.h"
+#include "../../interfaces/include/error.h"
 #include "../../lexer/include/lexer.h"
 
 namespace yu::compiler
@@ -10,33 +11,58 @@ namespace yu::compiler
     class Parser
     {
     public:
-        Parser(lang::TokenList &tokens, const char *source, const char *file_name, const Lexer &lexer) : lexer(lexer),
-            tokens(tokens),
-            source(source),
-            file_name(file_name),
-            error_reporter(source, file_name)
+        Parser(lang::TokenList &tokens, const char *source, const char *file_name,
+               std::vector<uint32_t> line_cols) : ast(),
+                                                  error_reporter(source, file_name),
+                                                  line_cols(std::move(line_cols)),
+                                                  tokens(tokens),
+                                                  source(source),
+                                                  file_name(file_name),
+                                                  current_token(),
+                                                  current(0),
+                                                  current_scope(0)
         {
             update_current_token();
         }
 
         ast::AST parse_program();
 
+        const VarDeclList &get_var_decls() const
+        {
+            return var_declrs;
+        }
+
+        const SymbolList &get_symbols() const
+        {
+            return symbols;
+        }
+
+        const std::vector<ParseError> &get_warnings() const
+        {
+            return error_reporter.get_warnings();
+        }
+
+        const std::vector<ParseError> &get_errors() const
+        {
+            return error_reporter.get_errors();
+        }
+
     private:
-        Lexer lexer;
-        const lang::TokenList &tokens;
-        const char *source;
-        const char *file_name;
-        DefaultErrorReporter error_reporter;
-
-        uint32_t current = 0;
-        uint32_t current_scope = 0;
-        lang::token_t current_token;
-
+        ast::AST ast;
         VarDeclList var_declrs;
         TypeList types;
         SymbolList symbols;
+        DefaultErrorReporter error_reporter;
+        std::vector<uint32_t> line_cols;
 
-        ast::AST ast;
+        const lang::TokenList &tokens;
+        const char *source;
+        const char *file_name;
+
+        lang::Token current_token;
+
+        uint32_t current;
+        uint32_t current_scope;
 
         uint32_t parse_expression();
 
@@ -72,19 +98,27 @@ namespace yu::compiler
 
         void update_current_token();
 
+        void synchronize();
+
         bool is_at_end() const
         {
             return current >= tokens.size() || tokens.types[current] == lang::TokenType::END_OF_FILE;
         }
 
-        const lang::token_t &advance()
+        std::pair<uint32_t, uint32_t> get_line_col(const lang::Token &token) const;
+
+        std::string_view get_token_value(const lang::Token &token) const;
+
+        std::string_view get_token_value(size_t pos);
+
+        const lang::Token &advance()
         {
             current++;
             update_current_token();
             return current_token;
         }
 
-        bool match(lang::TokenType type)
+        bool match(const lang::TokenType type)
         {
             if (!is_at_end() && tokens.types[current] == type)
             {
@@ -98,7 +132,7 @@ namespace yu::compiler
         {
             if (!match(type))
             {
-                auto error = ParseError {
+                const auto error = ParseError {
                     ParseErrorFlags::UNEXPECTED_TOKEN,
                     ErrorSeverity::ERROR,
                     message,
@@ -119,33 +153,8 @@ namespace yu::compiler
 
         uint32_t lookup_symbol(std::string_view name) const;
 
-        uint32_t infer_type(uint32_t expr_index);
-
         std::string get_source_line(uint32_t line_number) const;
 
         std::string create_error_pointer(uint32_t column) const;
-
-        void synchronize();
-
-    public:
-        const VarDeclList &get_var_decls() const
-        {
-            return var_declrs;
-        }
-
-        const SymbolList &get_symbols() const
-        {
-            return symbols;
-        }
-
-        const std::vector<ParseError> &get_warnings() const
-        {
-            return error_reporter.get_warnings();
-        }
-
-        const std::vector<ParseError> &get_errors() const
-        {
-            return error_reporter.get_errors();
-        }
     };
 }
